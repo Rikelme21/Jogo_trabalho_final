@@ -1,4 +1,5 @@
 #include <raylib.h>
+#include "jogo.h"
 
 // o '*' indica que é um ponteiro, permitindo alterar o vaor armazenado no endereço da memoria
 void moverJogador(int *linha, int *coluna, int comando){
