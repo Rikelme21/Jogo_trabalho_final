@@ -3,7 +3,7 @@
 #include <string.h> 
 #include "jogo.h"
 
-// Abre o ficheiro mapa1.txt e converte-o para a matriz do jogo
+// Abre o ficheiro mapa1.txt e converte para a matriz do jogo
 int carregarMapa(const char *nomeArquivo, Jogo *j) {
     FILE *ficheiro = fopen(nomeArquivo, "r");
     if (ficheiro == NULL) return 0; 
@@ -34,7 +34,7 @@ int carregarMapa(const char *nomeArquivo, Jogo *j) {
     return 1; 
 }
 
-// Checa colisões: O boneco pode ir para essa coordenada?
+// Checa colisões
 int movimentoValido(Jogo *j, int comando) {
     int novaLinha = j->linhaJ;
     int novaColuna = j->colunaJ;
@@ -45,25 +45,25 @@ int movimentoValido(Jogo *j, int comando) {
     else if(comando == KEY_RIGHT) novaColuna++;
     else return 0; 
     
-    // Regra 1: Não pode sair fora dos limites da matriz
+    //Não pode sair fora dos limites da matriz
     if(novaLinha < 0 || novaLinha >= j->linhas || novaColuna < 0 || novaColuna >= j->colunas) {
-        strcpy(j->mensagem, "Limite do mapa!"); // NOVO: Avisa que tentou sair da tela
+        strcpy(j->mensagem, "Limite do mapa!"); //Avisa que tentou sair da tela
         return 0;
     }
     
-    // Regra 2: Não pode atravessar parede
+    //Não pode atravessar parede
     if(j->mapa[novaLinha][novaColuna] == '#') {
-        strcpy(j->mensagem, "Bateu na parede!"); // NOVO: Avisa que bateu no obstáculo
+        strcpy(j->mensagem, "Bateu na parede!"); //Avisa que bateu no obstáculo
         return 0;
     }
 
-    return 1; // Movimento liberado
+    return 1; //Movimento liberado
 }
 
 // Desenha visualmente a matriz na tela usando formas geométricas
 void desenharJogo(Jogo *j) {
     
-    // 1. DESENHO DA MATRIZ
+    //DESENHO DA MATRIZ
     for(int op1 = 0; op1 < j->colunas; op1++) {
         for(int op2 = 0; op2 < j->linhas; op2++) {
             
@@ -94,19 +94,23 @@ void desenharJogo(Jogo *j) {
         }
     }
 
-    // 2. DESENHO DO JOGADOR
+    //DESENHO DO JOGADOR
     int posJogX = (j->colunaJ * 41) + 43;
     int posJogY = (j->linhaJ * 41) + 43;
     DrawRectangle(posJogX, posJogY, 34, 34, BLUE);
 
     // 3. PAINEL DE INFORMAÇÕES
     DrawText("PAINEL DO EXPLORADOR", 500, 40, 20, DARKGRAY);
-    DrawText(TextFormat("Energia: %d", j->energia), 500, 80, 20, BLACK);
-    DrawText(TextFormat("Cristais: %d / %d", j->cristais, CRISTAIS_VITORIA), 500, 110, 20, BLACK);
-    DrawText(TextFormat("Turnos: %d", j->turnos), 500, 140, 20, BLACK);
     
-    DrawText("Status:", 500, 200, 20, DARKGRAY);
-    DrawText(j->mensagem, 500, 230, 20, BLUE);
+    //Mostra o nome do jogador digitado na tela inicial
+    DrawText(TextFormat("Jogador: %s", j->nomeJogador), 500, 70, 20, BLUE); 
+    
+    DrawText(TextFormat("Energia: %d", j->energia), 500, 100, 20, BLACK);
+    DrawText(TextFormat("Cristais: %d / %d", j->cristais, CRISTAIS_VITORIA), 500, 130, 20, BLACK);
+    DrawText(TextFormat("Turnos: %d", j->turnos), 500, 160, 20, BLACK);
+    
+    DrawText("Status:", 500, 220, 20, DARKGRAY);
+    DrawText(j->mensagem, 500, 250, 20, DARKGREEN);
 
     DrawText("Pressione 'Q' para desistir", 500, 500, 15, GRAY);
 }

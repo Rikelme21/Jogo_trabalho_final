@@ -9,32 +9,34 @@
 #define CRISTAIS_VITORIA 3
 #define ENERGIA_INICIAL 20
 
-/* resultados da partida */
+// Resultados e Estados da partida
+#define TELA_INICIAL -1  //Estado antes do jogo começar
 #define EM_ANDAMENTO 0
 #define VITORIA 1
 #define DERROTA 2
 #define DESISTENCIA 3
 
 typedef struct {
-    char mapa[MAX_LINHAS][MAX_COLUNAS]; /* dimensoes lidas do arquivo */
+    char mapa[MAX_LINHAS][MAX_COLUNAS]; 
     int linhas, colunas;                
-    int linhaJ, colunaJ;                /* posicao atual do jogador */
-    int energia;                        /* energia inicial vem do arquivo */
-    int minimoCristais;                 /* lido do arquivo */
+    int linhaJ, colunaJ;                
+    int energia;                        
+    int minimoCristais;                 
     int cristais, turnos;               
-    char mensagem[TAM_MSG];             /* ultima mensagem mostrada na tela */
+    char mensagem[TAM_MSG];             
+    char nomeJogador[50]; //Guarda o nome do jogador
 } Jogo;
 
-/* mapa.c */
-int carregarMapa(const char *nomeArquivo, Jogo *j); /* 1 = ok, 0 = erro */
+//mapa.c
+int carregarMapa(const char *nomeArquivo, Jogo *j); 
 void desenharJogo(Jogo *j);
 int movimentoValido(Jogo *j, int comando);
 
-/* jogador.c */
+//jogador.c
 void moverJogador(int *linha, int *coluna, int comando);
 
-/* eventos.c */
-void processarCasa(Jogo *j); /* cristal/evento; atualiza mensagem */
+//eventos.c
+void processarCasa(Jogo *j); 
 int chegouNaSaida(Jogo *j);
 int mostrarFimDeJogo(Jogo *j, int resultado);
 
