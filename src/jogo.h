@@ -4,6 +4,10 @@
 #define MAX_LINHAS 20
 #define MAX_COLUNAS 40
 #define TAM_MSG 80
+#define COLUNAS 10
+#define LINHAS 8
+#define CRISTAIS_VITORIA 3
+#define ENERGIA_INICIAL 20
 
 /* resultados da partida */
 #define EM_ANDAMENTO 0
@@ -23,7 +27,6 @@ typedef struct {
 
 /* mapa.c */
 int carregarMapa(const char *nomeArquivo, Jogo *j); /* 1 = ok, 0 = erro */
-int telaCabe(Jogo *j); /* ncurses: 1 se mapa + painel cabem (Na Raylib não é tao necessário, mas faz parte do molde) */
 void desenharJogo(Jogo *j);
 int movimentoValido(Jogo *j, int comando);
 
