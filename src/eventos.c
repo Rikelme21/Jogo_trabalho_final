@@ -1,74 +1,101 @@
 #include <raylib.h>
 #include "jogo.h"
 
-void processarCasa(Jogo *j){
-    if(j->mapa[j->linhaJ][j->colunaJ] == 'C'){
-        j->cristais = j->cristais + 1;
-    }
-    if(j->mapa[j->linhaJ][j->colunaJ] == 'R'){
-        j->energia = j->energia + 4;
-    }
-    if(j->mapa[j->linhaJ][j->colunaJ] == 'A'){
-        j->energia = j->energia - 4;
-    }
-    if(j->mapa[j->linhaJ][j->colunaJ] == 'E'){
+#include <raylib.h>
+#include <string.h> // Para usar strcpy() nas mensagens
+#include "jogo.h"
 
+// Verifica em qual letra o jogador pisou e aplica a regra
+void processarCasa(Jogo *j) {
+    char casaAtual = j->mapa[j->linhaJ][j->colunaJ];
+
+    if (casaAtual == 'C') {
+        j->cristais++;
+        strcpy(j->mensagem, "Cristal coletado!");
     }
-    if(j->mapa[j->linhaJ][j->colunaJ] != 'S'){
+    else if (casaAtual == 'R') {
+        j->energia += 4;
+        strcpy(j->mensagem, "Recuperou 4 de energia!");
+    }
+    else if (casaAtual == 'A') {
+        j->energia -= 4;
+        strcpy(j->mensagem, "Armadilha! Perdeu 4 de energia.");
+    }
+    else if (casaAtual == 'E') {
+        // Evento surpresa: Dá energia mas custa 2 turnos de penalidade
+        j->energia += 2;
+        j->turnos += 2; 
+        strcpy(j->mensagem, "Evento: Comeu uma fruta magica.");
+    }
+    else if (casaAtual == 'S') {
+        strcpy(j->mensagem, "Chegou na saida!");
+    }
+    else {
+        strcpy(j->mensagem, "Caminho livre...");
+    }
+
+    // Depois do jogador passar pela casa, ela vira chão vazio ('.').
+    // O if garante que a Letra 'S' (Saída) não seja apagada do mapa.
+    if (casaAtual != 'S') {
         j->mapa[j->linhaJ][j->colunaJ] = '.';
     }
 }
 
-
-int chegouNaSaida(Jogo *j){
-    if(j->mapa[j->linhaJ][j->colunaJ] == 'S'){
+// Retorna 1 (Verdadeiro) se pisou na saída, e 0 (Falso) caso contrário
+int chegouNaSaida(Jogo *j) {
+    if(j->mapa[j->linhaJ][j->colunaJ] == 'S') {
         return 1;
-    }else{
-        return 0;
     }
+    return 0;
 }
 
+// Monta a tela preta e branca de fim de jogo
+int mostrarFimDeJogo(Jogo *j, int resultado) {
+    int escolheu = 0;
+    int opcao = 0;
 
-int mostrarFimDeJogo(Jogo *j, int resultado){
-    int op3 = 0;
-
-    //desenha tela final
-    DrawRectangle(1, 1, 800, 600, WHITE);
-
-    if(resultado == VITORIA){
-        DrawText("VITORIA!",100, 100, 100, GREEN);
-    }
-    if(resultado == DERROTA){
-        DrawText("DERROTA",100, 100, 100, RED);
-    }
-    if(resultado == DESISTENCIA){
-        DrawText("VOCÊ",100, 100, 100, ORANGE);
-        DrawText("DESISTIU",100, 210, 100, ORANGE);
-    }
-    
-    DrawText(TextFormat("Energias restantes: %d", j->energia),100, 250, 30, BLACK);
-    DrawText(TextFormat("Cristais: %d", j->cristais),100, 290, 30, BLACK);
-    DrawText(TextFormat("Turnos: %d", j->turnos),100, 330, 30, BLACK);
-
-    while(op3==0){
+    // Cria um sub-laço: O jogo fica "preso" aqui até o jogador escolher Sim(S) ou Não(N)
+    while (escolheu == 0) {
         BeginDrawing();
+        ClearBackground(RAYWHITE);
 
-        DrawText("Jogar novamente?",100, 400, 30, BLACK);
-        DrawText("Pressionar 'S' se sim, e 'N' se não",100, 430, 30, BLACK);
-
-        if(IsKeyPressed(KEY_S)){
-            return 1;
-        }else{
-            if(IsKeyPressed(KEY_N)){
-                return 0;
-            }
+        if(resultado == VITORIA) {
+            DrawText("VITORIA!", 100, 100, 80, GREEN);
+            DrawText("Voce escapou da ilha!", 100, 190, 30, DARKGREEN);
         }
+        else if(resultado == DERROTA) {
+            DrawText("DERROTA", 100, 100, 80, RED);
+            DrawText("Sua energia acabou...", 100, 190, 30, MAROON);
+        }
+        else if(resultado == DESISTENCIA) {
+            DrawText("DESISTENCIA", 100, 100, 80, ORANGE);
+            DrawText("Voce abandonou a expedicao.", 100, 190, 30, DARKGRAY);
+        }
+        
+        // Placar Final
+        DrawText(TextFormat("Energias restantes: %d", j->energia), 100, 260, 30, BLACK);
+        DrawText(TextFormat("Cristais: %d", j->cristais), 100, 300, 30, BLACK);
+        DrawText(TextFormat("Turnos: %d", j->turnos), 100, 340, 30, BLACK);
+
+        DrawText("Jogar novamente?", 100, 420, 30, BLACK);
+        DrawText("Pressione 'S' para SIM, e 'N' para NAO", 100, 460, 20, GRAY);
 
         EndDrawing();
+
+        // Aguarda a resposta do teclado
+        if(IsKeyPressed(KEY_S)) {
+            opcao = 1; // 1 significa que quer reiniciar
+            escolheu = 1;
+        } else if(IsKeyPressed(KEY_N)) {
+            opcao = 0; // 0 significa que quer fechar
+            escolheu = 1;
+        }
+
+        // Proteção caso o jogador clique no "X" da janela para forçar a saída
         if (WindowShouldClose()) {
             return 0;
         }
-
     }
-    return 0;
+    
+    return opcao;
 }
