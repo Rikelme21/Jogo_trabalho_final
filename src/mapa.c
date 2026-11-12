@@ -1,6 +1,57 @@
 #include <raylib.h>
 #include "jogo.h"
 
+void configuraMapa(Jogo *j){
+    int op1, op2;
+
+    j->linhaJ = 1; // inicia as variaveis
+    j->colunaJ = 1;
+
+    j->energia = ENERGIA_INICIAL;
+    j->cristais = 0;
+    j->turnos = 0;
+
+
+    j->linhas = LINHAS;
+    j->colunas = COLUNAS;
+
+    for(op1 = 0; op1 < LINHAS; op1++){
+        for(op2 = 0; op2 < COLUNAS; op2++){
+            if(op1 == 0 || op1 == (LINHAS - 1) || op2 == 0 || op2 == (COLUNAS - 1)){
+                j->mapa[op1][op2] = '#';
+            }else{
+                j->mapa[op1][op2] = '.';
+            }
+            
+        }
+    }
+
+    j->mapa[1][2] = '#';
+    j->mapa[2][2] = '#';
+    j->mapa[2][3] = '#';
+    j->mapa[2][4] = '#';
+    j->mapa[3][4] = '#';
+    j->mapa[4][1] = '#';
+    j->mapa[5][3] = '#';
+    j->mapa[5][4] = '#';
+    j->mapa[6][4] = '#';
+    j->mapa[2][7] = '#';
+    j->mapa[2][6] = '#';
+    j->mapa[3][6] = '#';
+    j->mapa[4][6] = '#';
+    j->mapa[2][8] = '#';
+    
+
+    j->mapa[5][3] = 'R';
+    j->mapa[5][7] = 'A';
+
+    j->mapa[2][5] = 'C';
+    j->mapa[6][3] = 'C';
+    j->mapa[6][6] = 'C';
+
+    j->mapa[3][8] = 'S';
+}
+
 int movimentoValido(Jogo *j, int comando){
     int novaLinha = j->linhaJ;
     int novaColuna = j->colunaJ;
@@ -31,17 +82,19 @@ int movimentoValido(Jogo *j, int comando){
 
 void desenharJogo(Jogo *j){
     int op1, op2;
+
     //desenha o mapa
     for(op1 = 0; op1 < j->colunas; op1++){
         for(op2 = 0; op2 < j->linhas; op2++){
-            if(j->mapa[op2][op1]=='.'){
-                DrawRectangle((op1 * 41)+40, (op2 * 41)+40, 40, 40, GRAY);
-            }
+            DrawRectangle((op1 * 41)+40, (op2 * 41)+40, 40, 40, GRAY);
+
             if(j->mapa[op2][op1]=='#'){
                 DrawRectangle((op1 * 41)+40, (op2 * 41)+40, 40, 40, BLACK);
             }
             if(j->mapa[op2][op1]=='C'){
-                DrawRectangle((op1 * 41)+40, (op2 * 41)+40, 40, 40, YELLOW);
+                DrawCircle((op1 * 41)+60, (op2 * 41)+60, (35 / 2), YELLOW);
+                DrawText(TextFormat("$"),(op1 * 41)+55, (op2 * 41)+52, 20, BLACK);
+
             }
             if(j->mapa[op2][op1]=='R'){
                 DrawRectangle((op1 * 41)+40, (op2 * 41)+40, 40, 40, GREEN);
@@ -59,13 +112,14 @@ void desenharJogo(Jogo *j){
     }
 
     //textos
-    DrawText(TextFormat("Energia: %d", j->energia),50, 450, 20, BLACK);
-    DrawText(TextFormat("Cristais: %d", j->cristais),50, 480, 20, BLACK);
+    DrawText(TextFormat("Energia: %d", j->energia),50, 420, 20, BLACK);
+    DrawText(TextFormat("Cristais: %d", j->cristais),50, 450, 20, BLACK);
+    DrawText(TextFormat("Turnos: %d", j->turnos),50, 480, 20, BLACK);
     DrawText(TextFormat("Pressione 'Q' para desistir"),50, 540, 20, BLACK);
 
 
     //desenha boneco
-    DrawRectangle((j->colunaJ * 41)+40, (j->linhaJ * 41)+40, 40, 40, BLUE);
+    DrawRectangle((j->colunaJ * 41)+43, (j->linhaJ * 41)+43, 34, 34, BLUE);
 }
 
 //int carregarMapa(const char *nomeArquivo, Jogo *j){
