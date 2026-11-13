@@ -1,28 +1,44 @@
 #include <raylib.h>
 #include <stdio.h>
-#include <string.h> 
+#include <string.h>
 #include "jogo.h"
 
-// Abre o ficheiro mapa1.txt e converte para a matriz do jogo
-int carregarMapa(const char *nomeArquivo, Jogo *j) {
+int carregarMapa(const char *nomeArquivo, Jogo *j, int nivelDesejado) {
     FILE *ficheiro = fopen(nomeArquivo, "r");
     if (ficheiro == NULL) return 0; 
     
-    int linhaAtual = 0;
-    
-    while (fgets(j->mapa[linhaAtual], MAX_COLUNAS, ficheiro) != NULL) {
-        for (int colunaAtual = 0; j->mapa[linhaAtual][colunaAtual] != '\0'; colunaAtual++) {
-            if (j->mapa[linhaAtual][colunaAtual] == 'P') {
-                j->linhaJ = linhaAtual;
-                j->colunaJ = colunaAtual;
-                j->mapa[linhaAtual][colunaAtual] = '.'; 
-            }
+    int nivelAtual = 1;
+    char linhaTemp[MAX_COLUNAS];
+
+    while (nivelAtual < nivelDesejado) {
+        if (fgets(linhaTemp, MAX_COLUNAS, ficheiro) == NULL) {
+            fclose(ficheiro);
+            return 0; 
         }
-        linhaAtual++;
-        if (linhaAtual >= MAX_LINHAS) break; 
+        if (linhaTemp[0] == '-') nivelAtual++;
     }
 
-    j->linhas = linhaAtual;
+    int linhaMatriz = 0;
+    while (fgets(j->mapa[linhaMatriz], MAX_COLUNAS, ficheiro) != NULL) {
+        if (j->mapa[linhaMatriz][0] == '-') break; 
+        
+        for (int colunaAtual = 0; j->mapa[linhaMatriz][colunaAtual] != '\0'; colunaAtual++) {
+            if (j->mapa[linhaMatriz][colunaAtual] == 'P') {
+                j->linhaJ = linhaMatriz;
+                j->colunaJ = colunaAtual;
+                j->mapa[linhaMatriz][colunaAtual] = '.'; 
+            }
+        }
+        linhaMatriz++;
+        if (linhaMatriz >= MAX_LINHAS) break; 
+    }
+
+    if (linhaMatriz == 0) {
+        fclose(ficheiro);
+        return 0;
+    }
+
+    j->linhas = linhaMatriz;
 
     int contaColunas = 0;
     while (j->mapa[0][contaColunas] != '\n' && j->mapa[0][contaColunas] != '\0' && j->mapa[0][contaColunas] != '\r') {
@@ -34,7 +50,6 @@ int carregarMapa(const char *nomeArquivo, Jogo *j) {
     return 1; 
 }
 
-// Checa colisões
 int movimentoValido(Jogo *j, int comando) {
     int novaLinha = j->linhaJ;
     int novaColuna = j->colunaJ;
@@ -45,72 +60,74 @@ int movimentoValido(Jogo *j, int comando) {
     else if(comando == KEY_RIGHT) novaColuna++;
     else return 0; 
     
-    //Não pode sair fora dos limites da matriz
     if(novaLinha < 0 || novaLinha >= j->linhas || novaColuna < 0 || novaColuna >= j->colunas) {
-        strcpy(j->mensagem, "Limite do mapa!"); //Avisa que tentou sair da tela
+        strcpy(j->mensagem, "Limite do mapa!"); 
         return 0;
     }
-    
-    //Não pode atravessar parede
     if(j->mapa[novaLinha][novaColuna] == '#') {
-        strcpy(j->mensagem, "Bateu na parede!"); //Avisa que bateu no obstáculo
+        strcpy(j->mensagem, "Bateu na parede!"); 
         return 0;
     }
-
-    return 1; //Movimento liberado
+    return 1;
 }
 
-// Desenha visualmente a matriz na tela usando formas geométricas
 void desenharJogo(Jogo *j) {
     
+    int larguraMapa = j->colunas * 41;
+    int alturaMapa = j->linhas * 41;
+    int larguraPainel = 300; 
+    int espacoMeio = 50; 
+    
+    int larguraTotal = larguraMapa + espacoMeio + larguraPainel;
+    
+    //Descobre o X e Y exatos para que o bloco inteiro fique no meio de 1280x720
+    int offsetX = (1280 - larguraTotal) / 2;
+    int offsetY = (720 - alturaMapa) / 2;
+
+    //Garante que o mapa não fica colado ao teto se for muito grande
+    if (offsetY < 40) offsetY = 40; 
+    if (offsetX < 40) offsetX = 40;
+
     //DESENHO DA MATRIZ
     for(int op1 = 0; op1 < j->colunas; op1++) {
         for(int op2 = 0; op2 < j->linhas; op2++) {
             
-            int posX = (op1 * 41) + 40;
-            int posY = (op2 * 41) + 40;
+            int posX = offsetX + (op1 * 41);
+            int posY = offsetY + (op2 * 41);
 
-            DrawRectangle(posX, posY, 40, 40, LIGHTGRAY); // Chão base
+            DrawRectangle(posX, posY, 40, 40, LIGHTGRAY);
 
-            if(j->mapa[op2][op1]=='#') {
-                DrawRectangle(posX, posY, 40, 40, DARKGRAY); // Parede
-            }
+            if(j->mapa[op2][op1]=='#') DrawRectangle(posX, posY, 40, 40, DARKGRAY);
             if(j->mapa[op2][op1]=='C') {
-                DrawCircle(posX + 20, posY + 20, 15, GOLD);  // Cristal redondo
+                DrawCircle(posX + 20, posY + 20, 15, GOLD);  
                 DrawText("$", posX + 15, posY + 10, 20, BLACK);
             }
-            if(j->mapa[op2][op1]=='R') {
-                DrawRectangle(posX, posY, 40, 40, GREEN); // Recupera Energia
-            }
-            if(j->mapa[op2][op1]=='A') {
-                DrawRectangle(posX, posY, 40, 40, RED);   // Armadilha
-            }
-            if(j->mapa[op2][op1]=='E') {
-                DrawRectangle(posX, posY, 40, 40, ORANGE);// Evento
-            }
-            if(j->mapa[op2][op1]=='S') {
-                DrawRectangle(posX, posY, 40, 40, PURPLE);// Saída
-            }
+            if(j->mapa[op2][op1]=='R') DrawRectangle(posX, posY, 40, 40, GREEN); 
+            if(j->mapa[op2][op1]=='A') DrawRectangle(posX, posY, 40, 40, RED);   
+            if(j->mapa[op2][op1]=='E') DrawRectangle(posX, posY, 40, 40, ORANGE);
+            if(j->mapa[op2][op1]=='S') DrawRectangle(posX, posY, 40, 40, PURPLE);
         }
     }
 
     //DESENHO DO JOGADOR
-    int posJogX = (j->colunaJ * 41) + 43;
-    int posJogY = (j->linhaJ * 41) + 43;
+    int posJogX = offsetX + (j->colunaJ * 41) + 3;
+    int posJogY = offsetY + (j->linhaJ * 41) + 3;
     DrawRectangle(posJogX, posJogY, 34, 34, BLUE);
 
-    // 3. PAINEL DE INFORMAÇÕES
-    DrawText("PAINEL DO EXPLORADOR", 500, 40, 20, DARKGRAY);
-    
-    //Mostra o nome do jogador digitado na tela inicial
-    DrawText(TextFormat("Jogador: %s", j->nomeJogador), 500, 70, 20, BLUE); 
-    
-    DrawText(TextFormat("Energia: %d", j->energia), 500, 100, 20, BLACK);
-    DrawText(TextFormat("Cristais: %d / %d", j->cristais, CRISTAIS_VITORIA), 500, 130, 20, BLACK);
-    DrawText(TextFormat("Turnos: %d", j->turnos), 500, 160, 20, BLACK);
-    
-    DrawText("Status:", 500, 220, 20, DARKGRAY);
-    DrawText(j->mensagem, 500, 250, 20, DARKGREEN);
+    //PAINEL DE INFORMAÇÕES
+    int painelX = offsetX + larguraMapa + espacoMeio;
+    int topoY = offsetY;
 
-    DrawText("Pressione 'Q' para desistir", 500, 500, 15, GRAY);
+    DrawText("PAINEL DO EXPLORADOR", painelX, topoY, 20, DARKGRAY);
+    DrawText(TextFormat("Jogador: %s", j->nomeJogador), painelX, topoY + 40, 20, BLUE); 
+    DrawText(TextFormat("Fase: %d", j->nivel), painelX, topoY + 70, 20, MAGENTA); 
+    
+    DrawText(TextFormat("Energia: %d", j->energia), painelX, topoY + 120, 20, BLACK);
+    DrawText(TextFormat("Cristais: %d / %d", j->cristais, CRISTAIS_VITORIA), painelX, topoY + 150, 20, BLACK);
+    DrawText(TextFormat("Turnos: %d", j->turnos), painelX, topoY + 180, 20, BLACK);
+    
+    DrawText("Status:", painelX, topoY + 230, 20, DARKGRAY);
+    DrawText(j->mensagem, painelX, topoY + 260, 20, DARKGREEN);
+
+    DrawText("Pressione 'Q' para desistir", painelX, 680, 15, GRAY);
 }
