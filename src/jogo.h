@@ -17,7 +17,8 @@
 
 typedef struct {
     char mapa[MAX_LINHAS][MAX_COLUNAS]; /* dimensoes lidas do arquivo */
-    int linhas, colunas;                
+    int linhas, colunas;             
+    int linhaInicial, colunaInicial;   
     int linhaJ, colunaJ;                /* posicao atual do jogador */
     int energia;                        /* energia inicial vem do arquivo */
     int minimoCristais;                 /* lido do arquivo */
@@ -29,6 +30,7 @@ typedef struct {
 int carregarMapa(const char *nomeArquivo, Jogo *j); /* 1 = ok, 0 = erro */
 void desenharJogo(Jogo *j);
 int movimentoValido(Jogo *j, int comando);
+void configuraMapa(Jogo *J);
 
 /* jogador.c */
 void moverJogador(int *linha, int *coluna, int comando);
