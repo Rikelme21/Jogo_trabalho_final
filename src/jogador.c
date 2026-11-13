@@ -15,4 +15,3 @@ void moverJogador(int *linha, int *coluna, int comando){
         *coluna = *coluna + 1;
     }   
 }
-    
