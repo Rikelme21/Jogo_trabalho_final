@@ -1,7 +1,4 @@
 #include <raylib.h>
-#include "jogo.h"
-
-#include <raylib.h>
 #include <string.h> // Para usar strcpy() nas mensagens
 #include "jogo.h"
 
@@ -19,13 +16,33 @@ void processarCasa(Jogo *j) {
     }
     else if (casaAtual == 'A') {
         j->energia -= 4;
+        if (j->energia < 0) j->energia = 0;
         strcpy(j->mensagem, "Armadilha! Perdeu 4 de energia.");
     }
     else if (casaAtual == 'E') {
-        // Evento surpresa: Dá energia mas custa 2 turnos de penalidade
-        j->energia += 2;
-        j->turnos += 2; 
-        strcpy(j->mensagem, "Evento: Comeu uma fruta magica.");
+        int sorteio = rand() % 4;
+        j->mapa[j->linhaJ][j->colunaJ] = '.'; // Apaga o 'E' antes de um eventual teleporte
+
+        switch (sorteio) {
+            case 0:
+                j->cristais++;
+                strcpy(j->mensagem, "Evento: Ganhou 1 cristal!");
+                break;
+            case 1:
+                j->energia += 4;
+                strcpy(j->mensagem, "Evento: Ganhou 4 de energia!");
+                break;
+            case 2:
+                j->energia -= 4;
+                if (j->energia < 0) j->energia = 0;
+                strcpy(j->mensagem, "Evento: Perdeu 4 de energia!");
+                break;
+            case 3:
+                j->linhaJ = j->linhaInicial;
+                j->colunaJ = j->colunaInicial;
+                strcpy(j->mensagem, "Evento: Voltou ao inicio!");
+                break;
+        }
     }
     else if (casaAtual == 'S') {
         strcpy(j->mensagem, "Chegou na saida!");
@@ -34,9 +51,7 @@ void processarCasa(Jogo *j) {
         strcpy(j->mensagem, "Caminho livre...");
     }
 
-    // Depois do jogador passar pela casa, ela vira chão vazio ('.').
-    // O if garante que a Letra 'S' (Saída) não seja apagada do mapa.
-    if (casaAtual != 'S') {
+    if (casaAtual != 'S' && casaAtual != 'E') {
         j->mapa[j->linhaJ][j->colunaJ] = '.';
     }
 }
@@ -49,49 +64,50 @@ int chegouNaSaida(Jogo *j) {
     return 0;
 }
 
-// Monta a tela preta e branca de fim de jogo
+// Monta a tela de fim de jogo
 int mostrarFimDeJogo(Jogo *j, int resultado) {
     int escolheu = 0;
     int opcao = 0;
 
-    // Cria um sub-laço: O jogo fica "preso" aqui até o jogador escolher Sim(S) ou Não(N)
+    // Sub-laço: mantém a tela ativa até o jogador pressionar R ou Q
     while (escolheu == 0) {
         BeginDrawing();
         ClearBackground(RAYWHITE);
 
-        if(resultado == VITORIA) {
+        if (resultado == VITORIA) {
             DrawText("VITORIA!", 100, 100, 80, GREEN);
             DrawText("Voce escapou da ilha!", 100, 190, 30, DARKGREEN);
         }
-        else if(resultado == DERROTA) {
+        else if (resultado == DERROTA) {
             DrawText("DERROTA", 100, 100, 80, RED);
             DrawText("Sua energia acabou...", 100, 190, 30, MAROON);
         }
-        else if(resultado == DESISTENCIA) {
+        else if (resultado == DESISTENCIA) {
             DrawText("DESISTENCIA", 100, 100, 80, ORANGE);
             DrawText("Voce abandonou a expedicao.", 100, 190, 30, DARKGRAY);
         }
         
         // Placar Final
-        DrawText(TextFormat("Energias restantes: %d", j->energia), 100, 260, 30, BLACK);
-        DrawText(TextFormat("Cristais: %d", j->cristais), 100, 300, 30, BLACK);
-        DrawText(TextFormat("Turnos: %d", j->turnos), 100, 340, 30, BLACK);
+        DrawText(TextFormat("Explorador: %s", j->nomeJogador), 100, 250, 25, DARKBLUE);
+        DrawText(TextFormat("Energia restante: %d", j->energia), 100, 290, 25, BLACK);
+        DrawText(TextFormat("Cristais coletados: %d", j->cristais), 100, 325, 25, BLACK);
+        DrawText(TextFormat("Turnos gastos: %d", j->turnos), 100, 360, 25, BLACK);
 
-        DrawText("Jogar novamente?", 100, 420, 30, BLACK);
-        DrawText("Pressione 'S' para SIM, e 'N' para NAO", 100, 460, 20, GRAY);
+        DrawText("O que deseja fazer?", 100, 430, 30, BLACK);
+        DrawText("Pressione [R] para Reiniciar ou [Q] para Sair", 100, 470, 20, GRAY);
 
         EndDrawing();
 
         // Aguarda a resposta do teclado
-        if(IsKeyPressed(KEY_S)) {
-            opcao = 1; // 1 significa que quer reiniciar
+        if (IsKeyPressed(KEY_R)) {
+            opcao = 1; // 1 = reiniciar
             escolheu = 1;
-        } else if(IsKeyPressed(KEY_N)) {
-            opcao = 0; // 0 significa que quer fechar
+        } else if (IsKeyPressed(KEY_Q)) {
+            opcao = 0; // 0 = sair do jogo
             escolheu = 1;
         }
 
-        // Proteção caso o jogador clique no "X" da janela para forçar a saída
+        // Proteção caso o jogador clique no "X" da janela
         if (WindowShouldClose()) {
             return 0;
         }

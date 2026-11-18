@@ -5,70 +5,145 @@
 
 int carregarMapa(const char *nomeArquivo, Jogo *j, int nivelDesejado) {
     FILE *ficheiro = fopen(nomeArquivo, "r");
-    if (ficheiro == NULL) return 0; 
-    
-    int nivelAtual = 1;
-    char linhaTemp[MAX_COLUNAS];
+    if (ficheiro == NULL) return 0;
 
+    int nivelAtual = 1;
+    char linhaTemp[MAX_COLUNAS + 4];
+
+    // Avança até a fase desejada usando o separador '-'
     while (nivelAtual < nivelDesejado) {
-        if (fgets(linhaTemp, MAX_COLUNAS, ficheiro) == NULL) {
+        if (fgets(linhaTemp, sizeof(linhaTemp), ficheiro) == NULL) {
             fclose(ficheiro);
-            return 0; 
+            return 0;
         }
         if (linhaTemp[0] == '-') nivelAtual++;
     }
 
-    int linhaMatriz = 0;
-    while (fgets(j->mapa[linhaMatriz], MAX_COLUNAS, ficheiro) != NULL) {
-        if (j->mapa[linhaMatriz][0] == '-') break; 
-        
-        for (int colunaAtual = 0; j->mapa[linhaMatriz][colunaAtual] != '\0'; colunaAtual++) {
-            if (j->mapa[linhaMatriz][colunaAtual] == 'P') {
-                j->linhaJ = linhaMatriz;
-                j->colunaJ = colunaAtual;
-                j->mapa[linhaMatriz][colunaAtual] = '.'; 
-            }
-        }
-        linhaMatriz++;
-        if (linhaMatriz >= MAX_LINHAS) break; 
-    }
-
-    if (linhaMatriz == 0) {
+    // 1ª linha do cabeçalho: linhas e colunas
+    if (fgets(linhaTemp, sizeof(linhaTemp), ficheiro) == NULL ||
+        sscanf(linhaTemp, "%d %d", &j->linhas, &j->colunas) != 2) {
         fclose(ficheiro);
         return 0;
     }
 
-    j->linhas = linhaMatriz;
-
-    int contaColunas = 0;
-    while (j->mapa[0][contaColunas] != '\n' && j->mapa[0][contaColunas] != '\0' && j->mapa[0][contaColunas] != '\r') {
-        contaColunas++;
+    // 2ª linha do cabeçalho: energia inicial e mínimo de cristais
+    if (fgets(linhaTemp, sizeof(linhaTemp), ficheiro) == NULL ||
+        sscanf(linhaTemp, "%d %d", &j->energia, &j->minimoCristais) != 2) {
+        fclose(ficheiro);
+        return 0;
     }
-    j->colunas = contaColunas;
+
+    // Valida limites do cabeçalho
+    if (j->linhas <= 0 || j->linhas > MAX_LINHAS ||
+        j->colunas <= 0 || j->colunas >= MAX_COLUNAS ||
+        j->energia <= 0 || j->minimoCristais < 0) {
+        fclose(ficheiro);
+        return 0;
+    }
+
+    int achouJogador = 0;
+    int achouSaida = 0;
+
+    for (int linhaMatriz = 0; linhaMatriz < j->linhas; linhaMatriz++) {
+        if (fgets(linhaTemp, sizeof(linhaTemp), ficheiro) == NULL || linhaTemp[0] == '-') {
+            fclose(ficheiro);
+            return 0;
+        }
+
+        // Remove '\r' e '\n' do final da linha
+        linhaTemp[strcspn(linhaTemp, "\r\n")] = '\0';
+
+        if ((int)strlen(linhaTemp) != j->colunas) {
+            fclose(ficheiro);
+            return 0;
+        }
+
+        for (int colunaAtual = 0; colunaAtual < j->colunas; colunaAtual++) {
+            char c = linhaTemp[colunaAtual];
+
+            if (c != '#' && c != '.' && c != 'P' && c != 'C' &&
+                c != 'R' && c != 'A' && c != 'E' && c != 'S') {
+                fclose(ficheiro);
+                return 0;
+            }
+
+            if (c == 'P') {
+                j->linhaJ = linhaMatriz;
+                j->colunaJ = colunaAtual;
+                j->linhaInicial = linhaMatriz;
+                j->colunaInicial = colunaAtual;
+                c = '.';
+                achouJogador = 1;
+            } else if (c == 'S') {
+                achouSaida = 1;
+            }
+
+            j->mapa[linhaMatriz][colunaAtual] = c;
+        }
+        j->mapa[linhaMatriz][j->colunas] = '\0';
+    }
 
     fclose(ficheiro);
-    return 1; 
+
+    if (!achouJogador || !achouSaida) {
+        return 0;
+    }
+
+    return 1;
 }
 
 int movimentoValido(Jogo *j, int comando) {
     int novaLinha = j->linhaJ;
     int novaColuna = j->colunaJ;
 
-    if(comando == KEY_UP) novaLinha--;
-    else if(comando == KEY_DOWN) novaLinha++;
-    else if(comando == KEY_LEFT) novaColuna--;
-    else if(comando == KEY_RIGHT) novaColuna++;
+    if (comando == KEY_UP || comando == KEY_W) novaLinha--;
+    else if (comando == KEY_DOWN || comando == KEY_S) novaLinha++;
+    else if (comando == KEY_LEFT || comando == KEY_A) novaColuna--;
+    else if (comando == KEY_RIGHT || comando == KEY_D) novaColuna++;
     else return 0; 
     
-    if(novaLinha < 0 || novaLinha >= j->linhas || novaColuna < 0 || novaColuna >= j->colunas) {
+    if (novaLinha < 0 || novaLinha >= j->linhas || novaColuna < 0 || novaColuna >= j->colunas) {
         strcpy(j->mensagem, "Limite do mapa!"); 
         return 0;
     }
-    if(j->mapa[novaLinha][novaColuna] == '#') {
+    if (j->mapa[novaLinha][novaColuna] == '#') {
         strcpy(j->mensagem, "Bateu na parede!"); 
         return 0;
     }
     return 1;
+}
+
+void desenharLegenda(int x, int y) {
+    DrawText("LEGENDA:", x, y, 18, DARKGRAY);
+
+    // Jogador
+    DrawRectangle(x, y + 28, 18, 18, BLUE);
+    DrawText("Jogador", x + 28, y + 28, 18, BLACK);
+
+    // Cristal
+    DrawCircle(x + 9, y + 63, 9, GOLD);
+    DrawText("$", x + 5, y + 56, 15, BLACK);
+    DrawText("Cristal (C)", x + 28, y + 54, 18, BLACK);
+
+    // Recarga
+    DrawRectangle(x, y + 80, 18, 18, GREEN);
+    DrawText("Recarga +4 (R)", x + 28, y + 80, 18, BLACK);
+
+    // Armadilha
+    DrawRectangle(x, y + 106, 18, 18, RED);
+    DrawText("Armadilha -4 (A)", x + 28, y + 106, 18, BLACK);
+
+    // Evento
+    DrawRectangle(x, y + 132, 18, 18, ORANGE);
+    DrawText("Evento Surpresa (E)", x + 28, y + 132, 18, BLACK);
+
+    // Saida
+    DrawRectangle(x, y + 158, 18, 18, PURPLE);
+    DrawText("Saida (S)", x + 28, y + 158, 18, BLACK);
+
+    // Parede
+    DrawRectangle(x, y + 184, 18, 18, DARKGRAY);
+    DrawText("Parede (#)", x + 28, y + 184, 18, BLACK);
 }
 
 void desenharJogo(Jogo *j) {
@@ -116,18 +191,21 @@ void desenharJogo(Jogo *j) {
 
     //PAINEL DE INFORMAÇÕES
     int painelX = offsetX + larguraMapa + espacoMeio;
-    int topoY = offsetY;
+    int topoY = 50;
 
     DrawText("PAINEL DO EXPLORADOR", painelX, topoY, 20, DARKGRAY);
-    DrawText(TextFormat("Jogador: %s", j->nomeJogador), painelX, topoY + 40, 20, BLUE); 
-    DrawText(TextFormat("Fase: %d", j->nivel), painelX, topoY + 70, 20, MAGENTA); 
+    DrawText(TextFormat("Jogador: %s", j->nomeJogador), painelX, topoY + 35, 20, BLUE); 
+    DrawText(TextFormat("Fase: %d", j->nivel), painelX, topoY + 65, 20, MAGENTA); 
     
-    DrawText(TextFormat("Energia: %d", j->energia), painelX, topoY + 120, 20, BLACK);
-    DrawText(TextFormat("Cristais: %d / %d", j->cristais, CRISTAIS_VITORIA), painelX, topoY + 150, 20, BLACK);
-    DrawText(TextFormat("Turnos: %d", j->turnos), painelX, topoY + 180, 20, BLACK);
+    DrawText(TextFormat("Energia: %d", j->energia), painelX, topoY + 110, 20, BLACK);
+    DrawText(TextFormat("Cristais: %d / %d", j->cristais, j->minimoCristais), painelX, topoY + 140, 20, BLACK);
+    DrawText(TextFormat("Turnos: %d", j->turnos), painelX, topoY + 170, 20, BLACK);
     
-    DrawText("Status:", painelX, topoY + 230, 20, DARKGRAY);
-    DrawText(j->mensagem, painelX, topoY + 260, 20, DARKGREEN);
+    DrawText("Status:", painelX, topoY + 215, 20, DARKGRAY);
+    DrawText(j->mensagem, painelX, topoY + 245, 18, DARKGREEN);
 
-    DrawText("Pressione 'Q' para desistir", painelX, 680, 15, GRAY);
+    desenharLegenda(painelX, topoY + 295);
+
+    DrawText("Mover: Setas ou WASD", painelX, 625, 16, DARKGRAY);
+    DrawText("Pressione 'Q' para desistir", painelX, 650, 16, GRAY);
 }

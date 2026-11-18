@@ -17,16 +17,18 @@ typedef struct {
     char mapa[MAX_LINHAS][MAX_COLUNAS]; 
     int linhas, colunas;                
     int linhaJ, colunaJ;                
+    int linhaInicial, colunaInicial;    
     int energia;                        
     int minimoCristais;                 
     int cristais, turnos;               
     char mensagem[TAM_MSG];             
     char nomeJogador[50];               
-    int nivel;                         
+    int nivel;                                             
 } Jogo;
 
 int carregarMapa(const char *nomeArquivo, Jogo *j, int nivelDesejado); 
 void desenharJogo(Jogo *j);
+void desenharLegenda(int x, int y);
 int movimentoValido(Jogo *j, int comando);
 
 void moverJogador(int *linha, int *coluna, int comando);

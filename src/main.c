@@ -10,7 +10,9 @@ gcc -std=c11 -Wall -Wextra *.c -lraylib -lGL -lm -lpthread -ldl -lrt -lX11
 */ 
 
 #include <raylib.h>
-#include <string.h> 
+#include <string.h>
+#include <stdlib.h>
+#include <time.h>
 #include "jogo.h"
 
 int main() {
@@ -19,21 +21,21 @@ int main() {
     int qtdLetras = 0; 
     Jogo jogo;
 
-    //Inicia no Nível 1
+    // Inicia no Nível 1 (carregarMapa já define jogo.energia e jogo.minimoCristais)
     jogo.nivel = 1; 
     if (carregarMapa("fases.txt", &jogo, jogo.nivel) == 0) return 1; 
     
-    jogo.energia = ENERGIA_INICIAL;
     jogo.cristais = 0;
     jogo.turnos = 0;
     jogo.nomeJogador[0] = '\0'; 
     strcpy(jogo.mensagem, "Explore a ilha!");
     InitWindow(1280, 720, "Expedicao na Ilha dos Algoritmos");
     SetTargetFPS(30);
+    srand(time(NULL));
 
     while (!WindowShouldClose()) { 
         
-        //TELA INICIAL (MENU)
+        // TELA INICIAL (MENU)
         if (resultado == TELA_INICIAL) {
             int teclaChar = GetCharPressed();
             while (teclaChar > 0) {
@@ -76,13 +78,12 @@ int main() {
             continue; 
         }
         
-        //ESTADO 2: JOGO EM ANDAMENTO
+        // ESTADO 2: JOGO EM ANDAMENTO
         int comando = GetKeyPressed();
 
-        if(reiniciar == 1) {
+        if (reiniciar == 1) {
             jogo.nivel = 1; 
             carregarMapa("fases.txt", &jogo, jogo.nivel);
-            jogo.energia = ENERGIA_INICIAL;
             jogo.cristais = 0;
             jogo.turnos = 0;
             strcpy(jogo.mensagem, "O jogo recomecou!");
@@ -94,35 +95,40 @@ int main() {
             continue;
         }
 
-        if(resultado == EM_ANDAMENTO) {
-            if(comando == KEY_UP || comando == KEY_DOWN || comando == KEY_LEFT || comando == KEY_RIGHT) {
-                if(movimentoValido(&jogo, comando) == 1) {
-                    if(jogo.energia > 0) {
+        if (resultado == EM_ANDAMENTO) {
+            if (comando == KEY_UP || comando == KEY_W ||
+                comando == KEY_DOWN || comando == KEY_S ||
+                comando == KEY_LEFT || comando == KEY_A ||
+                comando == KEY_RIGHT || comando == KEY_D) {
+                if (movimentoValido(&jogo, comando) == 1) {
+                    if (jogo.energia > 0) {
                         moverJogador(&jogo.linhaJ, &jogo.colunaJ, comando); 
                         jogo.energia--;     
                         jogo.turnos++;      
                         processarCasa(&jogo); 
-                        
-                        if(jogo.energia <= 0 && !chegouNaSaida(&jogo)) {
-                            resultado = DERROTA;
-                        }
                     }
                 }
             }
-            if(comando == KEY_Q) resultado = DESISTENCIA;
+            if (comando == KEY_Q) resultado = DESISTENCIA;
 
-            if(chegouNaSaida(&jogo)) {
-                if(jogo.cristais >= CRISTAIS_VITORIA) {
+            // Verifica VITÓRIA / avanço de fase antes da derrota
+            if (chegouNaSaida(&jogo)) {
+                if (jogo.cristais >= jogo.minimoCristais) {
                     jogo.nivel++; 
                     if (carregarMapa("fases.txt", &jogo, jogo.nivel) == 1) {
-                        jogo.energia = ENERGIA_INICIAL;
                         jogo.cristais = 0;
                         strcpy(jogo.mensagem, "Avancou de Fase!");
                     } else {
                         resultado = VITORIA; 
                     }
+                } else {
+                    strcpy(jogo.mensagem, "Faltam cristais!");
                 }
-                else strcpy(jogo.mensagem, "Faltam cristais!");
+            }
+
+            // Verifica DERROTA por falta de energia
+            if (resultado == EM_ANDAMENTO && jogo.energia <= 0) {
+                resultado = DERROTA;
             }
         }
 
@@ -132,7 +138,7 @@ int main() {
             desenharJogo(&jogo);       
             EndDrawing();
         } else {
-            if(mostrarFimDeJogo(&jogo, resultado) == 1) reiniciar = 1;
+            if (mostrarFimDeJogo(&jogo, resultado) == 1) reiniciar = 1;
             else break;
         }
     }
