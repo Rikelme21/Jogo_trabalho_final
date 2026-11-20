@@ -104,7 +104,7 @@ int main() {
                         moverJogador(&jogo.linhaJ, &jogo.colunaJ, comando); 
                         jogo.energia--;     
                         jogo.turnos++;      
-                        processarCasa(&jogo, comando); 
+                        processarCasa(&jogo, comando, &resultado); 
                     }
                 }
             }

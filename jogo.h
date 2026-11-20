@@ -32,7 +32,7 @@ void desenharLegenda(int x, int y);
 int movimentoValido(Jogo *j, int comando);
 
 void moverJogador(int *linha, int *coluna, int comando);
-void processarCasa(Jogo *j, int comando); 
+void processarCasa(Jogo *j, int comando, int *resultado); 
 int chegouNaSaida(Jogo *j);
 int mostrarFimDeJogo(Jogo *j, int resultado);
 

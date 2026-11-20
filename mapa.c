@@ -61,8 +61,8 @@ int carregarMapa(const char *nomeArquivo, Jogo *j, int nivelDesejado) {
         for (int colunaAtual = 0; colunaAtual < j->colunas; colunaAtual++) {
             char c = linhaTemp[colunaAtual];
 
-            if (c != '#' && c != '.' && c != 'P' && c != 'C' &&
-                c != 'R' && c != 'A' && c != 'E' && c != 'S' && c != 'B') {
+            if (c != '#' && c != '.' && c != 'P' && c != 'C' && c != 'V' &&
+                c != 'R' && c != 'A' && c != 'E' && c != 'S' && c != 'B' && c != 'b') {
                 fclose(ficheiro);
                 return 0;
             }
@@ -124,23 +124,122 @@ int movimentoValido(Jogo *j, int comando) {
             strcpy(j->mensagem, "Caixa bateu no limite do mapa!"); 
             return 0;
         }
-        if (j->mapa[linhaCaixa][colunaCaixa] == '#') {
-            strcpy(j->mensagem, "Caixa bateu na parede!"); 
+        if (j->mapa[linhaCaixa][colunaCaixa] != '.' && j->mapa[linhaCaixa][colunaCaixa] != 'V') {
+            strcpy(j->mensagem, "O caminho não está livre!"); 
             return 0;
         }
-        if (j->mapa[linhaCaixa][colunaCaixa] == 'S') {
-            strcpy(j->mensagem, "Caixa bateu na saida!"); 
-            return 0;
-        }
-        if (j->mapa[linhaCaixa][colunaCaixa] == 'B') {
-            strcpy(j->mensagem, "Você não tem força para mover duas caixas!"); 
-            return 0;
+        if (j->mapa[linhaCaixa][colunaCaixa] == 'V') {
+            strcpy(j->mensagem, "Você tampou o buraco!"); 
+            j->mapa[linhaCaixa][colunaCaixa] = 'b';
+            j->mapa[novaLinha][novaColuna] = 'P';
+            j->mapa[j->linhaJ][j->colunaJ] = '.';
+            return 1;
         }
     }
     return 1;
 }
 
+void desenharJogo(Jogo *j) {
+    
+    int larguraMapa = j->colunas * 41;
+    int alturaMapa = j->linhas * 41;
+    int larguraPainel = 300; 
+    int espacoMeio = 50; 
+    
+    int larguraTotal = larguraMapa + espacoMeio + larguraPainel;
+    
+    //Descobre o X e Y exatos para que o bloco inteiro fique no meio de 1280x720
+    int offsetX = (1280 - larguraTotal) / 2;
+    int offsetY = (720 - alturaMapa) / 2;
+
+    //cores
+    Color listraCaixaFunda = GetColor(0x201911FF);
+    //Garante que o mapa não fica colado ao teto se for muito grande
+    if (offsetY < 40) offsetY = 40;
+    if (offsetX < 40) offsetX = 40;
+
+    //DESENHO DA MATRIZ
+    for(int op1 = 0; op1 < j->colunas; op1++) {
+        for(int op2 = 0; op2 < j->linhas; op2++) {
+            
+            int posX = offsetX + (op1 * 41);
+            int posY = offsetY + (op2 * 41);
+
+            DrawRectangle(posX, posY, 40, 40, LIGHTGRAY);
+
+            if(j->mapa[op2][op1]=='#'){
+                DrawRectangle(posX, posY, 40, 40, DARKGRAY);
+            }
+            if(j->mapa[op2][op1]=='b'){
+                DrawRectangle(posX, posY, 40, 40, BLACK);
+                DrawRectangle(posX + 4, posY + 4, 32, 32, DARKBROWN);
+                DrawRectangle(posX + 4, posY + 9, 32, 4, listraCaixaFunda);
+                DrawRectangle(posX + 4, posY + 18, 32, 4, listraCaixaFunda);
+                DrawRectangle(posX + 4, posY + 27, 32, 4, listraCaixaFunda);
+            }
+            if(j->mapa[op2][op1]=='C') {
+                DrawCircle(posX + 20, posY + 20, 15, GOLD);  
+                DrawText("$", posX + 15, posY + 10, 20, BLACK);
+            }
+            if(j->mapa[op2][op1]=='R'){
+                DrawRectangle(posX + 3, posY + 3, 34, 34, GREEN); 
+                DrawText("+", posX + 15, posY + 10, 20, BLACK);
+            }
+            if(j->mapa[op2][op1]=='A'){
+                DrawRectangle(posX + 3, posY + 3, 34, 34, RED);
+                DrawText("x", posX + 15, posY + 10, 20, BLACK);
+
+            }
+            if(j->mapa[op2][op1]=='E'){ 
+                DrawRectangle(posX + 3, posY + 3, 34, 34, ORANGE);
+                DrawText("?", posX + 15, posY + 10, 20, BLACK);
+            }
+            if(j->mapa[op2][op1]=='S'){
+                DrawRectangle(posX + 3, posY + 3, 34, 34, PURPLE);
+                DrawText("S", posX + 15, posY + 10, 20, BLACK);
+            }
+            if(j->mapa[op2][op1]=='B'){
+                DrawRectangle(posX + 1, posY + 1, 38, 38, BROWN);
+                DrawRectangle(posX + 1, posY + 7, 38, 5, DARKBROWN);
+                DrawRectangle(posX + 1, posY + 17, 38, 5, DARKBROWN);
+                DrawRectangle(posX + 1, posY + 27, 38, 5, DARKBROWN);
+            }
+            if(j->mapa[op2][op1]=='V'){
+                DrawRectangle(posX, posY, 40, 40, BLACK);
+                DrawCircle(posX + 20, posY + 20, 15, DARKGRAY);
+            }
+        }
+    }
+
+    //DESENHO DO JOGADOR
+    int posJogX = offsetX + (j->colunaJ * 41) + 3;
+    int posJogY = offsetY + (j->linhaJ * 41) + 3;
+    DrawRectangle(posJogX, posJogY, 34, 34, BLUE);
+
+    //PAINEL DE INFORMAÇÕES
+    int painelX = offsetX + larguraMapa + espacoMeio;
+    int topoY = 50;
+
+    DrawText("PAINEL DO EXPLORADOR", painelX, topoY, 20, DARKGRAY);
+    DrawText(TextFormat("Jogador: %s", j->nomeJogador), painelX, topoY + 35, 20, BLUE); 
+    DrawText(TextFormat("Fase: %d", j->nivel), painelX, topoY + 65, 20, MAGENTA); 
+    
+    DrawText(TextFormat("Energia: %d", j->energia), painelX, topoY + 110, 20, BLACK);
+    DrawText(TextFormat("Cristais: %d / %d", j->cristais, j->minimoCristais), painelX, topoY + 140, 20, BLACK);
+    DrawText(TextFormat("Turnos: %d", j->turnos), painelX, topoY + 170, 20, BLACK);
+    
+    DrawText("Status:", painelX, topoY + 215, 20, DARKGRAY);
+    DrawText(j->mensagem, painelX, topoY + 245, 18, DARKGREEN);
+
+    desenharLegenda(painelX, topoY + 295);
+
+    DrawText("Mover: Setas ou WASD", painelX, 625, 16, DARKGRAY);
+    DrawText("Pressione 'Q' para desistir", painelX, 650, 16, GRAY);
+}
+
 void desenharLegenda(int x, int y) {
+    Color listraCaixaFunda = GetColor(0x201911FF);
+
     DrawText("LEGENDA:", x, y, 18, DARKGRAY);
 
     // Jogador
@@ -180,91 +279,15 @@ void desenharLegenda(int x, int y) {
     DrawRectangle(x, y + 196, 18, 2, DARKBROWN);
 
     // Parede
-    DrawRectangle(x, y + 210, 18, 18, DARKGRAY);
-    DrawText("Parede", x + 28, y + 210, 18, BLACK);
-}
+    DrawRectangle(x, y + 210, 18, 18, BLACK);
+    DrawRectangle(x + 2, y + 212, 14, 14, DARKBROWN);
+    DrawRectangle(x + 2, y + 214, 14, 2, listraCaixaFunda);
+    DrawRectangle(x + 2, y + 218, 14, 2, listraCaixaFunda);
+    DrawRectangle(x + 2, y + 222, 14, 2, listraCaixaFunda);
+    DrawText("Buraco tampado", x + 28, y + 210, 18, BLACK);
 
-void desenharJogo(Jogo *j) {
-    
-    int larguraMapa = j->colunas * 41;
-    int alturaMapa = j->linhas * 41;
-    int larguraPainel = 300; 
-    int espacoMeio = 50; 
-    
-    int larguraTotal = larguraMapa + espacoMeio + larguraPainel;
-    
-    //Descobre o X e Y exatos para que o bloco inteiro fique no meio de 1280x720
-    int offsetX = (1280 - larguraTotal) / 2;
-    int offsetY = (720 - alturaMapa) / 2;
 
-    //Garante que o mapa não fica colado ao teto se for muito grande
-    if (offsetY < 40) offsetY = 40; 
-    if (offsetX < 40) offsetX = 40;
-
-    //DESENHO DA MATRIZ
-    for(int op1 = 0; op1 < j->colunas; op1++) {
-        for(int op2 = 0; op2 < j->linhas; op2++) {
-            
-            int posX = offsetX + (op1 * 41);
-            int posY = offsetY + (op2 * 41);
-
-            DrawRectangle(posX, posY, 40, 40, LIGHTGRAY);
-
-            if(j->mapa[op2][op1]=='#'){
-                DrawRectangle(posX, posY, 40, 40, DARKGRAY);
-            }
-            if(j->mapa[op2][op1]=='C') {
-                DrawCircle(posX + 20, posY + 20, 15, GOLD);  
-                DrawText("$", posX + 15, posY + 10, 20, BLACK);
-            }
-            if(j->mapa[op2][op1]=='R'){
-                DrawRectangle(posX + 3, posY + 3, 34, 34, GREEN); 
-                DrawText("+", posX + 15, posY + 10, 20, BLACK);
-            }
-            if(j->mapa[op2][op1]=='A'){
-                DrawRectangle(posX + 3, posY + 3, 34, 34, RED);
-                DrawText("x", posX + 15, posY + 10, 20, BLACK);
-
-            }
-            if(j->mapa[op2][op1]=='E'){ 
-                DrawRectangle(posX + 3, posY + 3, 34, 34, ORANGE);
-                DrawText("?", posX + 15, posY + 10, 20, BLACK);
-            }
-            if(j->mapa[op2][op1]=='S'){
-                DrawRectangle(posX + 3, posY + 3, 34, 34, PURPLE);
-                DrawText("S", posX + 15, posY + 10, 20, BLACK);
-            }
-            if(j->mapa[op2][op1]=='B'){
-                DrawRectangle(posX + 1, posY + 1, 38, 38, BROWN);
-                DrawRectangle(posX + 1, posY + 7, 38, 5, DARKBROWN);
-                DrawRectangle(posX + 1, posY + 17, 38, 5, DARKBROWN);
-                DrawRectangle(posX + 1, posY + 27, 38, 5, DARKBROWN);
-            }
-        }
-    }
-
-    //DESENHO DO JOGADOR
-    int posJogX = offsetX + (j->colunaJ * 41) + 3;
-    int posJogY = offsetY + (j->linhaJ * 41) + 3;
-    DrawRectangle(posJogX, posJogY, 34, 34, BLUE);
-
-    //PAINEL DE INFORMAÇÕES
-    int painelX = offsetX + larguraMapa + espacoMeio;
-    int topoY = 50;
-
-    DrawText("PAINEL DO EXPLORADOR", painelX, topoY, 20, DARKGRAY);
-    DrawText(TextFormat("Jogador: %s", j->nomeJogador), painelX, topoY + 35, 20, BLUE); 
-    DrawText(TextFormat("Fase: %d", j->nivel), painelX, topoY + 65, 20, MAGENTA); 
-    
-    DrawText(TextFormat("Energia: %d", j->energia), painelX, topoY + 110, 20, BLACK);
-    DrawText(TextFormat("Cristais: %d / %d", j->cristais, j->minimoCristais), painelX, topoY + 140, 20, BLACK);
-    DrawText(TextFormat("Turnos: %d", j->turnos), painelX, topoY + 170, 20, BLACK);
-    
-    DrawText("Status:", painelX, topoY + 215, 20, DARKGRAY);
-    DrawText(j->mensagem, painelX, topoY + 245, 18, DARKGREEN);
-
-    desenharLegenda(painelX, topoY + 295);
-
-    DrawText("Mover: Setas ou WASD", painelX, 625, 16, DARKGRAY);
-    DrawText("Pressione 'Q' para desistir", painelX, 650, 16, GRAY);
+    // Parede
+    DrawRectangle(x, y + 236, 18, 18, DARKGRAY);
+    DrawText("Parede", x + 28, y + 236, 18, BLACK);
 }

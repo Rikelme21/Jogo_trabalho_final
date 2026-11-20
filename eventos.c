@@ -5,7 +5,7 @@
 #include "jogo.h"
 
 // Verifica em qual letra o jogador pisou e aplica a regra
-void processarCasa(Jogo *j, int comando) {
+void processarCasa(Jogo *j, int comando, int *resultado) {
     char casaAtual = j->mapa[j->linhaJ][j->colunaJ];
 
     if (casaAtual == 'C') {
@@ -63,12 +63,17 @@ void processarCasa(Jogo *j, int comando) {
             j->mapa[j->linhaJ][j->colunaJ + 1] = 'B';
         }
     }
+    else if (casaAtual == 'V') {
+        *resultado = DERROTA;
+        strcpy(j->mensagem, "Caiu no buraco!");
+    }
     else {
         strcpy(j->mensagem, "Caminho livre...");
     }
-    if (casaAtual != 'S' && casaAtual != 'E') {
+    if (casaAtual != 'S' && casaAtual != 'E' && casaAtual != 'b' && casaAtual != 'V') {
         j->mapa[j->linhaJ][j->colunaJ] = '.';
     }
+    
 }
 
 // Retorna 1 (Verdadeiro) se pisou na saída, e 0 (Falso) caso contrário
@@ -95,7 +100,12 @@ int mostrarFimDeJogo(Jogo *j, int resultado) {
         }
         else if (resultado == DERROTA) {
             DrawText("DERROTA", 100, 100, 80, RED);
-            DrawText("Sua energia acabou...", 100, 190, 30, MAROON);
+            if(j->energia < 1){
+                DrawText("Sua energia acabou...", 100, 190, 30, MAROON);
+            }
+            if(j->mapa[j->linhaJ][j->colunaJ] == 'V'){
+                DrawText("Voce caiu no buraco...", 100, 190, 30, MAROON);
+            }
         }
         else if (resultado == DESISTENCIA) {
             DrawText("DESISTENCIA", 100, 100, 80, ORANGE);
