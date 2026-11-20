@@ -62,7 +62,7 @@ int carregarMapa(const char *nomeArquivo, Jogo *j, int nivelDesejado) {
             char c = linhaTemp[colunaAtual];
 
             if (c != '#' && c != '.' && c != 'P' && c != 'C' &&
-                c != 'R' && c != 'A' && c != 'E' && c != 'S') {
+                c != 'R' && c != 'A' && c != 'E' && c != 'S' && c != 'B') {
                 fclose(ficheiro);
                 return 0;
             }
@@ -95,6 +95,7 @@ int carregarMapa(const char *nomeArquivo, Jogo *j, int nivelDesejado) {
 int movimentoValido(Jogo *j, int comando) {
     int novaLinha = j->linhaJ;
     int novaColuna = j->colunaJ;
+    int colunaCaixa, linhaCaixa;
 
     if (comando == KEY_UP || comando == KEY_W) novaLinha--;
     else if (comando == KEY_DOWN || comando == KEY_S) novaLinha++;
@@ -110,6 +111,32 @@ int movimentoValido(Jogo *j, int comando) {
         strcpy(j->mensagem, "Bateu na parede!"); 
         return 0;
     }
+    if(j->mapa[novaLinha][novaColuna] == 'B'){
+        colunaCaixa = novaColuna;
+        linhaCaixa = novaLinha;
+
+        if (comando == KEY_UP || comando == KEY_W) linhaCaixa--;
+        if (comando == KEY_DOWN || comando == KEY_S) linhaCaixa++;
+        if (comando == KEY_LEFT || comando == KEY_A) colunaCaixa--;
+        if (comando == KEY_RIGHT || comando == KEY_D) colunaCaixa++;
+
+        if (linhaCaixa < 0 || linhaCaixa >= j->linhas) {
+            strcpy(j->mensagem, "Caixa bateu no limite do mapa!"); 
+            return 0;
+        }
+        if (j->mapa[linhaCaixa][colunaCaixa] == '#') {
+            strcpy(j->mensagem, "Caixa bateu na parede!"); 
+            return 0;
+        }
+        if (j->mapa[linhaCaixa][colunaCaixa] == 'S') {
+            strcpy(j->mensagem, "Caixa bateu na saida!"); 
+            return 0;
+        }
+        if (j->mapa[linhaCaixa][colunaCaixa] == 'B') {
+            strcpy(j->mensagem, "Você não tem força para mover duas caixas!"); 
+            return 0;
+        }
+    }
     return 1;
 }
 
@@ -123,17 +150,17 @@ void desenharLegenda(int x, int y) {
     // Cristal
     DrawCircle(x + 9, y + 63, 9, GOLD);
     DrawText("$", x + 5, y + 56, 15, BLACK);
-    DrawText("Cristal (C)", x + 28, y + 54, 18, BLACK);
+    DrawText("Cristal", x + 28, y + 54, 18, BLACK);
 
     // Recarga
     DrawRectangle(x, y + 80, 18, 18, GREEN);
     DrawText(TextFormat("+"), x + 5, y + 81, 18, BLACK);
-    DrawText("Recarga +4 (R)", x + 28, y + 80, 18, BLACK);
+    DrawText("Recarga +4", x + 28, y + 80, 18, BLACK);
 
     // Armadilha
     DrawRectangle(x, y + 106, 18, 18, RED);
     DrawText(TextFormat("x"), x + 5, y + 106, 18, BLACK);
-    DrawText("Armadilha -4 (A)", x + 28, y + 106, 18, BLACK);
+    DrawText("Armadilha -4", x + 28, y + 106, 18, BLACK);
 
     // Evento
     DrawRectangle(x, y + 132, 18, 18, ORANGE);
@@ -143,11 +170,18 @@ void desenharLegenda(int x, int y) {
     // Saida
     DrawRectangle(x, y + 158, 18, 18, PURPLE);
     DrawText(TextFormat("S"), x + 4, y + 159, 18, BLACK);
-    DrawText("Saida (S)", x + 28, y + 158, 18, BLACK);
+    DrawText("Saida", x + 28, y + 158, 18, BLACK);
+
+    // Caixa
+    DrawRectangle(x, y + 184, 18, 18, BROWN);
+    DrawText("Caixa", x + 28, y + 184, 18, BLACK);
+    DrawRectangle(x, y + 188, 18, 2, DARKBROWN);
+    DrawRectangle(x, y + 192, 18, 2, DARKBROWN);
+    DrawRectangle(x, y + 196, 18, 2, DARKBROWN);
 
     // Parede
-    DrawRectangle(x, y + 184, 18, 18, DARKGRAY);
-    DrawText("Parede (#)", x + 28, y + 184, 18, BLACK);
+    DrawRectangle(x, y + 210, 18, 18, DARKGRAY);
+    DrawText("Parede", x + 28, y + 210, 18, BLACK);
 }
 
 void desenharJogo(Jogo *j) {
@@ -176,7 +210,9 @@ void desenharJogo(Jogo *j) {
 
             DrawRectangle(posX, posY, 40, 40, LIGHTGRAY);
 
-            if(j->mapa[op2][op1]=='#') DrawRectangle(posX, posY, 40, 40, DARKGRAY);
+            if(j->mapa[op2][op1]=='#'){
+                DrawRectangle(posX, posY, 40, 40, DARKGRAY);
+            }
             if(j->mapa[op2][op1]=='C') {
                 DrawCircle(posX + 20, posY + 20, 15, GOLD);  
                 DrawText("$", posX + 15, posY + 10, 20, BLACK);
@@ -197,6 +233,12 @@ void desenharJogo(Jogo *j) {
             if(j->mapa[op2][op1]=='S'){
                 DrawRectangle(posX + 3, posY + 3, 34, 34, PURPLE);
                 DrawText("S", posX + 15, posY + 10, 20, BLACK);
+            }
+            if(j->mapa[op2][op1]=='B'){
+                DrawRectangle(posX + 1, posY + 1, 38, 38, BROWN);
+                DrawRectangle(posX + 1, posY + 7, 38, 5, DARKBROWN);
+                DrawRectangle(posX + 1, posY + 17, 38, 5, DARKBROWN);
+                DrawRectangle(posX + 1, posY + 27, 38, 5, DARKBROWN);
             }
         }
     }

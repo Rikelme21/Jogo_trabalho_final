@@ -5,7 +5,7 @@
 #include "jogo.h"
 
 // Verifica em qual letra o jogador pisou e aplica a regra
-void processarCasa(Jogo *j) {
+void processarCasa(Jogo *j, int comando) {
     char casaAtual = j->mapa[j->linhaJ][j->colunaJ];
 
     if (casaAtual == 'C') {
@@ -49,10 +49,23 @@ void processarCasa(Jogo *j) {
     else if (casaAtual == 'S') {
         strcpy(j->mensagem, "Chegou na saida!");
     }
+    else if (casaAtual == 'B'){
+        if (comando == KEY_UP || comando == KEY_W){
+            j->mapa[j->linhaJ - 1][j->colunaJ] = 'B';
+        }
+        if (comando == KEY_DOWN || comando == KEY_S){
+            j->mapa[j->linhaJ + 1][j->colunaJ] = 'B';
+        }
+        if (comando == KEY_LEFT || comando == KEY_A){
+            j->mapa[j->linhaJ][j->colunaJ - 1] = 'B';
+        }
+        if (comando == KEY_RIGHT || comando == KEY_D){
+            j->mapa[j->linhaJ][j->colunaJ + 1] = 'B';
+        }
+    }
     else {
         strcpy(j->mensagem, "Caminho livre...");
     }
-
     if (casaAtual != 'S' && casaAtual != 'E') {
         j->mapa[j->linhaJ][j->colunaJ] = '.';
     }
@@ -104,6 +117,9 @@ int mostrarFimDeJogo(Jogo *j, int resultado) {
         if (IsKeyPressed(KEY_R)) {
             opcao = 1; // 1 = reiniciar
             escolheu = 1;
+            if(resultado == VITORIA){
+                j->nivel = 1;
+            }
         } else if (IsKeyPressed(KEY_Q)) {
             opcao = 0; // 0 = sair do jogo
             escolheu = 1;
